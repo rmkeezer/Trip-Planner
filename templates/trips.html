@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h1>Trips</h1>
+  {% if session.logged_in %}
+    <h2>Add a new trip</h2>
+    <form action="{{ url_for('add_trip') }}" method=post class=add-trip>
+      <dl>
+        <dt>Name:
+        <dd><input type=text size=30 name=name>
+        <dt>Start Date:
+        <dd><input type=date name=startdate>
+        <dt>End Date:
+        <dd><input type=date name=enddate>
+        <dt>City:
+        <dd><select name=city>
+            <option value="paris">Paris</option>
+            <option value="metz">Metz</option>
+            <option value="london">London</option>
+          </select>
+        <dd><input type=submit value=Share>
+      </dl>
+    </form>
+  {% endif %}
+  <ul class=entries>
+  {% for entry in entries %}
+    <li><p><b>{{ entry[0] }}</b> - {{ entry[1] }}</p>
+  {% else %}
+    <li><em>No trips found</em>
+  {% endfor %}
+  </ul>
+{% endblock %}
