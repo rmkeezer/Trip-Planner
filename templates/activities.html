@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h1>Activities</h1>
+  {% if session.logged_in %}
+    <h2>Add a new activity</h2>
+    <form action="/attractions/{{ conf_num }}">
+      <input type="submit" value="Create an activity">
+    </form>
+    <br/>
+  {% endif %}
+  <table style="width:80%; " class="pure-table pure-table-bordered">
+    <thead><tr><th/><th/><th>Attraction</th><th>Start Time</th><th>End Time</th><th>Cost</th></tr></thead>
+    <tbody>
+  {% for entry in entries %}
+    <tr>
+      <td style="width:80px"><form action="/remove-activity/{{ conf_num }}/{{ entry[0] }}" method="post"><input type="submit" value="Remove"></form></td>
+      <td style="width:50px"><form action="/view-activity/{{ entry[0] }}" method="get"><input type="submit" value="View"></form></td>
+      <td>{{ entry[5] }}</td><td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td>
+    </tr>
+  {% else %}
+    <tr><em>No activities found</em></tr>
+  {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

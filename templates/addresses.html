@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h1>Addresses</h1>
+  {% if session.logged_in %}
+    <h2>Add a new address</h2>
+    <form action="{{ url_for('add_address') }}" method=post class="pure-form pure-form-aligned">
+      <fieldset>
+        <div class="pure-control-group">
+          <label>Number:</label>
+          <input type=number name=num value=0>
+        </div>
+        <div class="pure-control-group">
+          <label>Street:</label>
+          <input type=text name=street placeholder="Street">
+        </div>
+        <div class="pure-control-group">
+          <label>City:</label>
+          <input type=text name=city placeholder="City">
+        </div>
+        <div class="pure-control-group">
+          <label>State:</label>
+          <input type=text name=state placeholder="State">
+        </div>
+        <div class="pure-control-group">
+          <label>Zip:</label>
+          <input type=number name=zip value=0>
+        </div>
+        <div class="pure-control-group">
+          <label>Country:</label>
+          <input type=text name=country placeholder="Country">
+        </div>
+        <div class="pure-control-group">
+          <input type=submit value=Submit>
+        </div>
+      </fieldset>
+    </form>
+  {% endif %}
+  <table style="width:80%; " class="pure-table pure-table-bordered">
+    <thead><tr><th/><th>Number</th><th>Street</th><th>City</th><th>State</th><th>Zip</th><th>Country</th></tr></thead>
+    <tbody>
+  {% for entry in entries %}
+    <tr>
+      <td style="width:80px"><form action="/remove-address/{{ entry[0] }}" method="post"><input type="submit" value="Remove"></form></td>
+      <td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td><td>{{ entry[4] }}</td><td>{{ entry[5] }}</td><td>{{ entry[6] }}</td>
+    </tr>
+  {% else %}
+    <tr><em>No trips found</em></tr>
+  {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

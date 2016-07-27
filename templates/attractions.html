@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h1>Attractions</h1>
+  {% if session.logged_in %}
+    <h2>Add a new attraction</h2>
+    <form action="{{ url_for('add_attraction') }}" method=post class="pure-form pure-form-aligned">
+      <fieldset>
+        <div class="pure-control-group">
+          <label>Name:</label>
+          <input type=text name=name placeholder="Name">
+        </div>
+        <div class="pure-control-group">
+          <label>Description:</label>
+          <input type=text name=description placeholder="Description">
+        </div>
+        <div class="pure-control-group">
+          <label>Day of Week:</label>
+          <input type="checkbox" name="monday" checked>mon</input>
+          <input type="checkbox" name="tuesday" checked>tue</input>
+          <input type="checkbox" name="wednesday" checked>wed</input>
+          <input type="checkbox" name="thursday" checked>thu</input>
+          <input type="checkbox" name="friday" checked>fri</input>
+          <input type="checkbox" name="saturday" checked>sat</input>
+          <input type="checkbox" name="sunday" checked>sun</input>
+        </div>
+        <div class="pure-control-group">
+          <label>Opening Time:</label>
+          <input type=time name=opening value="09:00">
+        </div>
+        <div class="pure-control-group">
+          <label>Closing Time:</label>
+          <input type=time name=closing value="17:00">
+        </div>
+        <div class="pure-control-group">
+          <label>Cost:</label>
+          <input type=number name=cost value=0>
+        </div>
+        <div class="pure-control-group">
+          <label>Address:</label>
+          <select name=address>
+            {% for addr in addrs %}
+              <option value="{{ addr[0] }}">{{ addr[1] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <br/>
+        <div class="pure-control-group">
+          <label>Reservation Compulsory:</label>
+          <input type=checkbox name="reserve" unchecked>
+        </div>
+        <br/>
+        <div class="pure-control-group">
+          <input type=submit value=Submit>
+        </div>
+      </fieldset>
+    </form>
+    <form action="/addresses" method="get"><input type="submit" value="Create Another Address"></form>
+    <br/>
+  {% endif %}
+  <table style="width:80%; " class="pure-table pure-table-bordered">
+    <thead><tr><th/><th/><th>Name</th><th>Description</th><th>Opening Time</th><th>Closing Time</th><th>Cost</th><th>Reseravtion Compuslory</th><th>Transport Name</th><th>Address</th></tr></thead>
+    <tbody>
+  {% for entry in entries %}
+    <tr>
+      <td style="width:80px"><form action="/remove-attraction/{{ entry[0] }}" method="post"><input type="submit" value="Remove"></form></td>
+      <td style="width:100px"><form action="/create-activity/{{ entry[0] }}/{{ conf_num }}" method="get"><input type="submit" value="Create as Activity"></form></td>
+      <td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td><td>{{ entry[4] }}</td><td>{{ entry[5] }}</td><td>{{ entry[6] }}</td><td>{{ entry[7] }}</td><td>{{ entry[9] }}</td>
+    </tr>
+  {% else %}
+    <tr><em>No trips found</em></tr>
+  {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

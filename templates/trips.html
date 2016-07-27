@@ -3,29 +3,46 @@
   <h1>Trips</h1>
   {% if session.logged_in %}
     <h2>Add a new trip</h2>
-    <form action="{{ url_for('add_trip') }}" method=post class=add-trip>
-      <dl>
-        <dt>Name:
-        <dd><input type=text size=30 name=name>
-        <dt>Start Date:
-        <dd><input type=date name=startdate>
-        <dt>End Date:
-        <dd><input type=date name=enddate>
-        <dt>City:
-        <dd><select name=city>
+    <form action="{{ url_for('add_trip') }}" method=post class="pure-form pure-form-aligned">
+      <fieldset>
+        <div class="pure-control-group">
+          <label>Name:</label>
+          <input type=text size=30 name=name placeholder="Name">
+        </div>
+        <div class="pure-control-group">
+          <label>Start Date:</label>
+          <input type=date name=startdate>
+        </div>
+        <div class="pure-control-group">
+          <label>End Date:</label>
+          <input type=date name=enddate>
+        </div>
+        <div class="pure-control-group">
+          <label>City:</label>
+          <select name=city>
             <option value="paris">Paris</option>
             <option value="metz">Metz</option>
             <option value="london">London</option>
           </select>
-        <dd><input type=submit value=Share>
-      </dl>
+        </div>
+        <div class="pure-control-group">
+          <input type=submit value=Submit>
+        </div>
+      </fieldset>
     </form>
   {% endif %}
-  <ul class=entries>
+  <table style="width:80%; " class="pure-table pure-table-bordered">
+    <thead><tr><th/><th/><th>Name</th><th>City</th></tr></thead>
+    <tbody>
   {% for entry in entries %}
-    <li><p><b>{{ entry[0] }}</b> - {{ entry[1] }}</p>
+    <tr>
+      <td style="width:80px"><form action="/remove-trip/{{ entry[0] }}" method="post"><input type="submit" value="Remove"></form></td>
+      <td style="width:50px"><form action="/view-trip/{{ entry[0] }}" method="get"><input type="submit" value="View"></form></td>
+      <td>{{ entry[1] }}</td><td>{{ entry[2] }}</td>
+    </tr>
   {% else %}
-    <li><em>No trips found</em>
+    <tr><em>No trips found</em></tr>
   {% endfor %}
-  </ul>
+    </tbody>
+  </table>
 {% endblock %}
