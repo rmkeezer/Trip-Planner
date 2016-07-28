@@ -43,10 +43,32 @@
             {% endfor %}
           </select>
         </div>
+        <div class="pure-control-group">
+          <label>Public Transport:</label>
+          <select name=trans>
+              <option value=0>None</option>
+            {% for tran in trans %}
+              <option value="{{ tran[0] }}">{{ tran[0] }}</option>
+            {% endfor %}
+          </select>
+        </div>
         <br/>
         <div class="pure-control-group">
           <label>Reservation Compulsory:</label>
           <input type=checkbox name="reserve" unchecked>
+        </div>
+        <div class="pure-control-group">
+          <label>Time Slot Intervals:</label>
+          <select name=slots>
+            <option value=30>30 Minutes</option>
+            <option value=60>1 Hour</option>
+            <option value=120>2 Hours</option>
+            <option value=1440>All Day</option>
+          </select>
+        </div>
+        <div class="pure-control-group">
+          <label>Quantity per timeslot:</label>
+          <input type=number name=quantity value=1>
         </div>
         <br/>
         <div class="pure-control-group">
@@ -56,14 +78,17 @@
     </form>
     <form action="/addresses" method="get"><input type="submit" value="Create Another Address"></form>
     <br/>
+    <form action="/transports" method="get"><input type="submit" value="Create Another Public Transport"></form>
+    <br/>
   {% endif %}
   <table style="width:80%; " class="pure-table pure-table-bordered">
-    <thead><tr><th/><th/><th>Name</th><th>Description</th><th>Opening Time</th><th>Closing Time</th><th>Cost</th><th>Reseravtion Compuslory</th><th>Transport Name</th><th>Address</th></tr></thead>
+    <thead><tr><th/><th/><th/><th>Name</th><th>Description</th><th>Opening Time</th><th>Closing Time</th><th>Cost</th><th>Reseravtion Compuslory</th><th>Transport Name</th><th>Address</th></tr></thead>
     <tbody>
   {% for entry in entries %}
     <tr>
       <td style="width:80px"><form action="/remove-attraction/{{ entry[0] }}" method="post"><input type="submit" value="Remove"></form></td>
       <td style="width:100px"><form action="/create-activity/{{ entry[0] }}/{{ conf_num }}" method="get"><input type="submit" value="Create as Activity"></form></td>
+      <td style="width:100px"><form action="/view-attraction/{{ entry[0] }}" method="get"><input type="submit" value="View"></form></td>
       <td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td><td>{{ entry[4] }}</td><td>{{ entry[5] }}</td><td>{{ entry[6] }}</td><td>{{ entry[7] }}</td><td>{{ entry[9] }}</td>
     </tr>
   {% else %}

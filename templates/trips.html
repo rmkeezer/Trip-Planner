@@ -11,11 +11,11 @@
         </div>
         <div class="pure-control-group">
           <label>Start Date:</label>
-          <input type=date name=startdate>
+          <input type=date name=startdate value="2016-07-28">
         </div>
         <div class="pure-control-group">
           <label>End Date:</label>
-          <input type=date name=enddate>
+          <input type=date name=enddate value="2016-07-30">
         </div>
         <div class="pure-control-group">
           <label>City:</label>
@@ -32,13 +32,14 @@
     </form>
   {% endif %}
   <table style="width:80%; " class="pure-table pure-table-bordered">
-    <thead><tr><th/><th/><th>Name</th><th>City</th></tr></thead>
+    <thead><tr><th/><th/><th/><th>Name</th><th>City</th><th>Start Date</th><th>End Date</th><th>Total Cost</th><th>Booked</th></tr></thead>
     <tbody>
   {% for entry in entries %}
     <tr>
       <td style="width:80px"><form action="/remove-trip/{{ entry[0] }}" method="post"><input type="submit" value="Remove"></form></td>
       <td style="width:50px"><form action="/view-trip/{{ entry[0] }}" method="get"><input type="submit" value="View"></form></td>
-      <td>{{ entry[1] }}</td><td>{{ entry[2] }}</td>
+      <td style="width:50px"><form action="/book-trip/{{ entry[0] }}" method="get"><input type="submit" value="Book"></form></td>
+      <td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td><td>{{ entry[4] }}</td><td>{{ entry[5] }}</td><td>{{ entry[6] }}</td>
     </tr>
   {% else %}
     <tr><em>No trips found</em></tr>

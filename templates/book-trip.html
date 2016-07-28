@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h1>Book Trip</h1>
+  {% if session.logged_in %}
+    <form action="{{ url_for('pay_trip', conf_num=conf_num) }}" method=get class="pure-form pure-form-aligned">
+      <div class="pure-control-group">
+        <label>Credit Card:</label>
+        <select name=card>
+          {% for card in cards %}
+            <option value="{{ card[0] }}">{{ card[0] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="pure-control-group">
+        <input type=submit value=Pay>
+      </div>
+    </form>
+    <form action="/credit-cards/{{ conf_num }}" method="get"><input type="submit" value="Create Another Credit Card"></form>
+  {% endif %}
+{% endblock %}

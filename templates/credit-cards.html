@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h1>Credit Cards</h1>
+  {% if session.logged_in %}
+    <h2>Add a new credit card</h2>
+    <form action="{{ url_for('add_card', conf_num=conf_num) }}" method=post class="pure-form pure-form-aligned">
+      <fieldset>
+        <div class="pure-control-group">
+          <label>CCNumber:</label>
+          <input type=text name=num placeholder="Number">
+        </div>
+        <div class="pure-control-group">
+          <label>First Name:</label>
+          <input type=text name=first placeholder="First">
+        </div>
+        <div class="pure-control-group">
+          <label>Last Name:</label>
+          <input type=text name=last placeholder="Last">
+        </div>
+        <div class="pure-control-group">
+          <label>Expiry:</label>
+          <input type=text name=expiry placeholder="mm/yy">
+        </div>
+        <div class="pure-control-group">
+          <label>CVV:</label>
+          <input type=number name=cvv value=0>
+        </div>
+        <div class="pure-control-group">
+          <label>Address:</label>
+          <select name=address>
+            {% for addr in addrs %}
+              <option value="{{ addr[0] }}">{{ addr[1] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="pure-control-group">
+          <input type=submit value=Submit>
+        </div>
+      </fieldset>
+    </form>
+    <form action="/addresses" method="get"><input type="submit" value="Create Another Address"></form>
+    <br/>
+  {% endif %}
+  <table style="width:80%; " class="pure-table pure-table-bordered">
+    <thead><tr><th/><th>CCNumber</th><th>First Name</th><th>Last Name</th><th>Expiry</th><th>CVV</th><th>Username</th><th>Address</th></tr></thead>
+    <tbody>
+  {% for entry in entries %}
+    <tr>
+      <td style="width:80px"><form action="/remove-card/{{ entry[0] }}" method="post"><input type="submit" value="Remove"></form></td>
+      <td>{{ entry[0] }}</td><td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td><td>{{ entry[4] }}</td><td>{{ entry[5] }}</td><td>{{ entry[7] }}</td>
+    </tr>
+  {% else %}
+    <tr><em>No cards found</em></tr>
+  {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

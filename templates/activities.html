@@ -14,7 +14,7 @@
   {% for entry in entries %}
     <tr>
       <td style="width:80px"><form action="/remove-activity/{{ conf_num }}/{{ entry[0] }}" method="post"><input type="submit" value="Remove"></form></td>
-      <td style="width:50px"><form action="/view-activity/{{ entry[0] }}" method="get"><input type="submit" value="View"></form></td>
+      <td style="width:50px"><form action="/attractions/{{ conf_num }}" method="get"><input type="submit" value="View"></form></td>
       <td>{{ entry[5] }}</td><td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td>
     </tr>
   {% else %}
