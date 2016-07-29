@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h1>Users</h1>
+  <h2>Add a new user</h2>
+  <form action="{{ url_for('add_user') }}" method=post class="pure-form pure-form-aligned">
+    <fieldset>
+      <div class="pure-control-group">
+        <label>Username:</label>
+        <input type=text name=username placeholder="Username">
+      </div>
+      <div class="pure-control-group">
+        <label>Password:</label>
+        <input type=password name=password placeholder="Password">
+      </div>
+      <div class="pure-control-group">
+        <label>Frist Name:</label>
+        <input type=text name=first placeholder="First">
+      </div>
+      <div class="pure-control-group">
+        <label>Last Name:</label>
+        <input type=text name=last placeholder="Last">
+      </div>
+      <div class="pure-control-group">
+        <label>Email:</label>
+        <input type=email name=email placeholder="user@website.com">
+      </div>
+      {% if session.logged_in and session.is_admin %}
+      <div class="pure-control-group">
+        <label>Admin Privileges:</label>
+        <input type=checkbox name=admin unchecked>
+      </div>
+      {% endif %}
+      <div class="pure-control-group">
+        <input type=submit value=Submit>
+      </div>
+    </fieldset>
+  </form>
+  {% if session.logged_in and session.is_admin %}
+  <table style="width:80%; " class="pure-table pure-table-bordered">
+    <thead><tr><th/><th/><th>Username</th><th>First Name</th><th>Last Name</th><th>Email</th><th>Admin</th><th>Blocked</th></tr></thead>
+    <tbody>
+  {% for entry in entries %}
+    <tr>
+      <td style="width:80px"><form action="/remove-user/{{ entry[0] }}" method="post"><input type="submit" value="Remove"></form></td>
+      <td style="width:80px"><form action="/block-user/{{ entry[0] }}" method="post"><input type="submit" value="Block"></form></td>
+      <td>{{ entry[0] }}</td><td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td><td>{{ entry[4] }}</td><td>{{ entry[5] }}</td>
+    </tr>
+  {% else %}
+    <tr><em>No trips found</em></tr>
+  {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+{% endblock %}

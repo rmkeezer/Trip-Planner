@@ -1,21 +1,22 @@
 import os
-import sqlite3
+import pymysql
 from time import strftime
 import datetime
-from flask import Flask, request, render_template, redirect, url_for, session, g
+from flask import Flask, request, render_template, redirect, url_for, session, g, abort
 
 app = Flask(__name__)
 app.config.from_object(__name__)
 
 app.config.update(dict(
-    DATABASE=os.path.join(app.root_path, 'test.db'),
+    DATABASE='team4',
     SECRET_KEY='development key'
 ))
 
 @app.route('/trips')
 def trips():
     db = get_db()
-    cur = db.execute('select conf_num, name, city, start_date, end_date, total_cost, booked from trip where username=\'%s\'' % session['username'])
+    cur = db.cursor()
+    cur.execute('select conf_num, name, city, start_date, end_date, total_cost, booked from trip where username=\'%s\'' % session['username'])
     entries = cur.fetchall()
     return render_template('trips.html', entries=entries)
 
@@ -23,11 +24,12 @@ def trips():
 @app.route('/attractions/<conf_num>')
 def attractions(conf_num=None):
     db = get_db()
-    cur = db.execute('select attr_id, name, description, opening_time, closing_time, cost, reserve_compulsory, trans_name, addr_id from attraction')
+    cur = db.cursor()
+    cur.execute('select attr_id, name, description, opening_time, closing_time, cost, reserve_compulsory, trans_name, addr_id from attraction')
     entries = cur.fetchall()
-    cur = db.execute('select addr_id, num, street, city, state, zip, country from address')
+    cur.execute('select addr_id, num, street, city, state, zip, country from address')
     addresses = cur.fetchall()
-    cur = db.execute('select trans_name, addr_id from public_transportation')
+    cur.execute('select trans_name, addr_id from public_transportation')
     trans = cur.fetchall()
     addrs = []
     for address in addresses:
@@ -38,26 +40,29 @@ def attractions(conf_num=None):
         newentries.append(entry)
     return render_template('attractions.html', entries=newentries, conf_num=conf_num, addrs=addrs, trans=trans)
 
-@app.route('/users')
-def users():
-    db = get_db()
-    cur = db.execute('select username, first_name, last_name, is_admin from user order by username desc')
-    entries = cur.fetchall()
-    return render_template('users.html', entries=entries)
-
 @app.route('/addresses')
 def addresses():
     db = get_db()
-    cur = db.execute('select addr_id, num, street, city, state, zip, country from address')
+    cur = db.cursor()
+    cur.execute('select addr_id, num, street, city, state, zip, country from address')
     entries = cur.fetchall()
     return render_template('addresses.html', entries=entries)
+
+@app.route('/users')
+def users():
+    db = get_db()
+    cur = db.cursor()
+    cur.execute('select username, first_name, last_name, email, is_admin, blocked from user')
+    entries = cur.fetchall()
+    return render_template('users.html', entries=entries)
 
 @app.route('/credit-cards/<conf_num>')
 def credit_cards(conf_num=None):
     db = get_db()
-    cur = db.execute('select ccnumber, first_name, last_name, expiry, cvv, username, addr_id from credit_card where username=\'%s\'' % session['username'])
+    cur = db.cursor()
+    cur.execute('select ccnumber, first_name, last_name, expiry, cvv, username, addr_id from credit_card where username=\'%s\'' % session['username'])
     entries = cur.fetchall()
-    cur = db.execute('select addr_id, num, street, city, state, zip, country from address')
+    cur.execute('select addr_id, num, street, city, state, zip, country from address')
     addresses = cur.fetchall()
     addrs = []
     for address in addresses:
@@ -71,9 +76,10 @@ def credit_cards(conf_num=None):
 @app.route('/transports')
 def transports():
     db = get_db()
-    cur = db.execute('select trans_name, addr_id from public_transportation')
+    cur = db.cursor()
+    cur.execute('select trans_name, addr_id from public_transportation')
     entries = cur.fetchall()
-    cur = db.execute('select addr_id, num, street, city, state, zip, country from address')
+    cur.execute('select addr_id, num, street, city, state, zip, country from address')
     addresses = cur.fetchall()
     addrs = []
     for address in addresses:
@@ -90,14 +96,18 @@ def login():
     error = None
     if request.method == 'POST':
         db = get_db()
-        session['username']=request.form['username']
-        session['password']=request.form['password']
-        cur = db.execute('select username from user where username=\'%s\' and password=\'%s\''
-            % (session['username'], session['password']))
-        if cur.fetchall() == []:
+        cur = db.cursor()
+        cur.execute('select username, is_admin from user where username=\'%s\' and password=\'%s\''
+            % (request.form['username'], request.form['password']))
+        check = cur.fetchall()
+        if check == ():
             error = 'Invalid username or password'
         else:
+            print(check)
+            username, is_admin = check[0]
             session['logged_in'] = True
+            session['username'] = username
+            session['is_admin'] = True if is_admin else False
             return redirect(url_for('trips'))
     return render_template('login.html', error=error)
 
@@ -106,7 +116,7 @@ def logout():
     session['logged_in'] = False
     session['username'] = None
     session['password'] = None
-    return redirect(url_for('trips'))
+    return redirect(url_for('login'))
 
 @app.route('/user')
 @app.route('/user/<username>')
@@ -123,8 +133,9 @@ def add_trip():
     if not session['logged_in']:
         abort(401)
     db = get_db()
-    test = [request.form['name'], request.form['startdate'], request.form['enddate'], 0, request.form['city'], session['username'], 0]
-    db.execute('insert into trip (name, start_date, end_date, booked, city, username, total_cost) values (?, ?, ?, ?, ?, ?, ?)',
+    cur = db.cursor()
+    test = (request.form['name'], request.form['startdate'], request.form['enddate'], 0, request.form['city'], session['username'], 0)
+    cur.execute('insert into trip (name, start_date, end_date, booked, city, username, total_cost) values (%s, %s, %s, %s, %s, %s, %s)',
                  test)
     db.commit()
     return redirect(url_for('trips'))
@@ -134,8 +145,9 @@ def add_transport():
     if not session['logged_in']:
         abort(401)
     db = get_db()
-    test = [request.form['name'], request.form['address']]
-    db.execute('insert into public_transportation (trans_name, addr_id) values (?, ?)',
+    cur = db.cursor()
+    test = (request.form['name'], request.form['address'])
+    cur.execute('insert into public_transportation (trans_name, addr_id) values (%s, %s)',
                  test)
     db.commit()
     return redirect(url_for('transports'))
@@ -145,19 +157,30 @@ def add_address():
     if not session['logged_in']:
         abort(401)
     db = get_db()
-    test = [request.form['num'], request.form['street'], request.form['city'], request.form['state'], request.form['zip'], request.form['country']]
-    db.execute('insert into address (num, street, city, state, zip, country) values (?, ?, ?, ?, ?, ?)',
+    cur = db.cursor()
+    test = (request.form['num'], request.form['street'], request.form['city'], request.form['state'], request.form['zip'], request.form['country'])
+    cur.execute('insert into address (num, street, city, state, zip, country) values (%s, %s, %s, %s, %s, %s)',
                  test)
     db.commit()
     return redirect(url_for('addresses'))
+
+@app.route('/add-user', methods=['POST'])
+def add_user():
+    db = get_db()
+    cur = db.cursor()
+    test = (request.form['username'], request.form['password'], request.form['first'], request.form['last'], request.form['email'], 0 if request.form.get('admin')==None else 1, 0)
+    cur.execute('insert into user (username, password, first_name, last_name, email, is_admin, blocked) values (%s, %s, %s, %s, %s, %s, %s)', test)
+    db.commit()
+    return redirect(url_for('users'))
 
 @app.route('/add-card/<conf_num>', methods=['POST'])
 def add_card(conf_num=None):
     if not session['logged_in']:
         abort(401)
     db = get_db()
-    test = [request.form['num'], request.form['first'], request.form['last'], request.form['expiry'], request.form['cvv'], request.form['address'], session['username']]
-    db.execute('insert into credit_card (ccnumber, first_name, last_name, expiry, cvv, addr_id, username) values (?, ?, ?, ?, ?, ?, ?)',
+    cur = db.cursor()
+    test = (request.form['num'], request.form['first'], request.form['last'], request.form['expiry'], request.form['cvv'], request.form['address'], session['username'])
+    cur.execute('insert into credit_card (ccnumber, first_name, last_name, expiry, cvv, addr_id, username) values (%s, %s, %s, %s, %s, %s, %s)',
                  test)
     db.commit()
     return redirect(url_for('credit_cards', conf_num=conf_num))
@@ -167,16 +190,38 @@ def remove_address(addr_id=None):
     if not session['logged_in']:
         abort(401)
     db = get_db()
-    db.execute('delete from address where addr_id=\'%s\'' % addr_id)
+    cur = db.cursor()
+    cur.execute('delete from address where addr_id=\'%s\'' % addr_id)
     db.commit()
     return redirect(url_for('addresses'))
+
+@app.route('/remove-user/<username>', methods=['POST'])
+def remove_user(username=None):
+    if not session['logged_in']:
+        abort(401)
+    db = get_db()
+    cur = db.cursor()
+    cur.execute('delete from user where username=\'%s\'' % username)
+    db.commit()
+    return redirect(url_for('users'))
+
+@app.route('/block-user/<username>', methods=['POST'])
+def block_user(username=None):
+    if not session['logged_in']:
+        abort(401)
+    db = get_db()
+    cur = db.cursor()
+    cur.execute('update user set blocked=1 where username=\'%s\'' % username)
+    db.commit()
+    return redirect(url_for('users'))
 
 @app.route('/remove-transport/<trans_name>', methods=['POST'])
 def remove_transport(trans_name=None):
     if not session['logged_in']:
         abort(401)
     db = get_db()
-    db.execute('delete from public_transportation where trans_name=\'%s\'' % trans_name)
+    cur = db.cursor()
+    cur.execute('delete from public_transportation where trans_name=\'%s\'' % trans_name)
     db.commit()
     return redirect(url_for('transports'))
 
@@ -185,7 +230,8 @@ def remove_attraction(attr_id=None):
     if not session['logged_in']:
         abort(401)
     db = get_db()
-    db.execute('delete from attraction where attr_id=\'%s\'' % attr_id)
+    cur = db.cursor()
+    cur.execute('delete from attraction where attr_id=\'%s\'' % attr_id)
     db.commit()
     return redirect(url_for('attractions'))
 
@@ -194,18 +240,20 @@ def remove_trip(conf_num=None):
     if not session['logged_in']:
         abort(401)
     db = get_db()
-    db.execute('delete from trip where conf_num=\'%s\'' % conf_num)
+    cur = db.cursor()
+    cur.execute('delete from trip where conf_num=\'%s\'' % conf_num)
     db.commit()
     return redirect(url_for('trips'))
 
 @app.route('/view-trip/<conf_num>', methods=['GET'])
 def view_trip(conf_num=None):
     db = get_db()
-    cur = db.execute('select activity_id, start_datetime, end_datetime, cost, attr_id from activity where conf_num=\'%s\'' % conf_num)
+    cur = db.cursor()
+    cur.execute('select activity_id, start_datetime, end_datetime, cost, attr_id, num_in_party from activity where conf_num=\'%s\'' % conf_num)
     entries = cur.fetchall()
     newentries = []
     for entry in entries:
-        cur = db.execute('select name from attraction where attr_id=\'%s\'' % entry[4])
+        cur.execute('select name from attraction where attr_id=\'%s\'' % entry[4])
         entry += cur.fetchone()
         newentries.append(entry)
     return render_template('activities.html', entries=newentries, conf_num=conf_num)
@@ -215,14 +263,15 @@ def remove_activity(conf_num=None, activity_id=None):
     if not session['logged_in']:
         abort(401)
     db = get_db()
-    cur = db.execute('select total_cost from trip where conf_num=\'%s\'' % conf_num)
+    cur = db.cursor()
+    cur.execute('select total_cost from trip where conf_num=\'%s\'' % conf_num)
     total_cost = cur.fetchall()[0][0]
-    cur = db.execute('select cost, num_in_party, attr_id, start_datetime from activity where activity_id=\'%s\'' % activity_id)
+    cur.execute('select cost, num_in_party, attr_id, start_datetime from activity where activity_id=\'%s\'' % activity_id)
     cost, num_in_party, attr_id, starttime = cur.fetchall()[0]
     total_cost -= cost
-    db.execute('update trip set total_cost=%s where conf_num=\'%s\'' % (total_cost, conf_num))
+    cur.execute('update trip set total_cost=%s where conf_num=\'%s\'' % (total_cost, conf_num))
     db.commit()
-    cur = db.execute('select start_datetime, quantity from time_slot where attr_id=\'%s\'' % attr_id)
+    cur.execute('select start_datetime, quantity from time_slot where attr_id=\'%s\'' % attr_id)
     slots = cur.fetchall()
     if slots != None:
         try:
@@ -236,9 +285,9 @@ def remove_activity(conf_num=None, activity_id=None):
             if (low <= datetime.datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S') <= high):
                 sdt = start_datetime
                 newquantity = quantity + num_in_party
-                db.execute('update time_slot set quantity=\'%s\' where start_datetime=\'%s\'' % (newquantity, sdt))
+                cur.execute('update time_slot set quantity=\'%s\' where start_datetime=\'%s\'' % (newquantity, sdt))
                 db.commit()
-    db.execute('delete from activity where activity_id=\'%s\'' % activity_id)
+    cur.execute('delete from activity where activity_id=\'%s\'' % activity_id)
     db.commit()
     return redirect(url_for('view_trip', conf_num=conf_num))
 
@@ -247,12 +296,14 @@ def add_attraction():
     if not session['logged_in']:
         abort(401)
     db = get_db()
+    cur = db.cursor()
     ohr, omin = request.form['opening'].split(":")
-    test = [request.form['name'], request.form['description'], 0 if request.form.get('monday')==None else 1, request.form['opening'], request.form['closing'], request.form['cost'], 0 if request.form.get('reserve')==None else 1, request.form['address'], None if request.form['trans'] == "0" else request.form['trans']]
-    db.execute('insert into attraction (name, description, day_of_week, opening_time, closing_time, cost, reserve_compulsory, addr_id, trans_name) values (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    days = str('Monday' if request.form.get('monday')!=None else "") + ' ' + str('Tuesday' if request.form.get('tuesday')!=None else "") + ' ' + str('Wednesday' if request.form.get('wednesday')!=None else "") + ' ' + str('Thursday' if request.form.get('thursday')!=None else "") + ' ' + str('Friday' if request.form.get('friday')!=None else "") + ' ' + str('Saturday' if request.form.get('saturday')!=None else "") + ' ' + str('Sunday' if request.form.get('sunday')!=None else "")
+    test = (request.form['name'], request.form['description'], days, request.form['opening'], request.form['closing'], request.form['cost'], 0 if request.form.get('reserve')==None else 1, request.form['address'], None if request.form['trans'] == "0" else request.form['trans'])
+    cur.execute('insert into attraction (name, description, days_open, opening_time, closing_time, cost, reserve_compulsory, addr_id, trans_name) values (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
                  test)
     db.commit()
-    cur = db.execute('select last_insert_rowid() from attraction')
+    cur.execute('select last_insert_id() from attraction')
     attr_id = cur.fetchall()[0][0]
     print(attr_id)
     if request.form.get('reserve') != None:
@@ -267,8 +318,8 @@ def add_attraction():
                 today = datetime.date.today()
                 sdate = datetime.datetime(today.year, today.month, today.day, int(start/60), start%60, 0)
                 edate = datetime.datetime(today.year, today.month, today.day, int(end/60), end%60, 0)
-                test = [str(sdate + datetime.timedelta(days=i)), str(edate + datetime.timedelta(days=i)), int(request.form['quantity']), attr_id]
-                db.execute('insert into time_slot (start_datetime, end_datetime, quantity, attr_id) values (?, ?, ?, ?)', test)
+                test = (str(sdate + datetime.timedelta(days=i)), str(edate + datetime.timedelta(days=i)), int(request.form['quantity']), attr_id)
+                cur.execute('insert into time_slot (start_datetime, end_datetime, quantity, attr_id) values (%s, %s, %s, %s)', test)
     db.commit()
     return redirect(url_for('attractions'))
 
@@ -283,13 +334,14 @@ def book_trip(conf_num=None):
     if not session['logged_in']:
         abort(401)
     db = get_db()
-    cur = db.execute('select total_cost, booked from trip where conf_num=\'%s\'' % conf_num)
+    cur = db.cursor()
+    cur.execute('select total_cost, booked from trip where conf_num=\'%s\'' % conf_num)
     total_cost, booked = cur.fetchall()[0]
     if total_cost == 0 or booked == 1:
-        db.execute('update trip set booked=1 where conf_num=\'%s\'' % conf_num)
+        cur.execute('update trip set booked=1 where conf_num=\'%s\'' % conf_num)
         db.commit()
         return redirect(url_for('trips'))
-    cur = db.execute('select ccnumber from credit_card where username=\'%s\'' % session['username'])
+    cur.execute('select ccnumber from credit_card where username=\'%s\'' % session['username'])
     cards = cur.fetchall()
     return render_template('book-trip.html', conf_num=conf_num, cards=cards)
 
@@ -298,7 +350,8 @@ def pay_trip(conf_num=None):
     if not session['logged_in']:
         abort(401)
     db = get_db()
-    db.execute('update trip set booked=1 where conf_num=\'%s\'' % conf_num)
+    cur = db.cursor()
+    cur.execute('update trip set booked=1 where conf_num=\'%s\'' % conf_num)
     db.commit()
     return redirect(url_for('trips'))
 
@@ -311,7 +364,8 @@ def review_attraction(attr_id=None):
 @app.route('/view-attraction/<attr_id>', methods=['GET'])
 def view_attraction(attr_id=None):
     db = get_db()
-    cur = db.execute('select date_time, title, body, username from review where attr_id=\'%s\'' % attr_id)
+    cur = db.cursor()
+    cur.execute('select date_time, title, body, username from review where attr_id=\'%s\'' % attr_id)
     entries = cur.fetchall()
     return render_template('view-attraction.html', entries=entries, attr_id=attr_id)
 
@@ -327,34 +381,60 @@ def add_activity(attr_id=None, conf_num=None):
         etime = datetime.datetime.strptime(request.form['end'], '%Y-%m-%dT%H:%M:%S')
     except:
         etime = datetime.datetime.strptime(request.form['end'], '%Y-%m-%dT%H:%M')
-    if etime < stime:
+    if etime <= stime:
         return render_template('create-activity.html', attr_id=attr_id, conf_num=conf_num)
     db = get_db()
-    cur = db.execute('select start_datetime, quantity from time_slot where attr_id=\'%s\'' % attr_id)
+    cur = db.cursor()
+    cur.execute('select cost, opening_time, closing_time, reserve_compulsory from attraction where attr_id=\'%s\'' % attr_id)
+    cost, opening_time, closing_time, reserve_compulsory = cur.fetchall()[0]
+    opening_time = int(opening_time.split(":")[0]) * 60 + int(opening_time.split(":")[1])
+    closing_time = int(closing_time.split(":")[0]) * 60 + int(closing_time.split(":")[1])
+    if (stime.hour * 60 + stime.minute) < opening_time or (etime.hour * 60 + etime.minute) > closing_time:
+        return render_template('create-activity.html', attr_id=attr_id, conf_num=conf_num)
+    cur.execute('select start_datetime, quantity from time_slot where attr_id=\'%s\'' % attr_id)
     slots = cur.fetchall()
+    noslotfound = True
     if slots != None:
         for start_datetime, quantity in slots:
             margin = datetime.timedelta(minutes = 59)
             low = stime - margin
             high = stime + margin
             if (low <= datetime.datetime.strptime(start_datetime, '%Y-%m-%d %H:%M:%S') <= high):
+                noslotfound = False
                 if quantity - int(request.form['num']) < 0:
-                    return redirect(url_for('view_trip', conf_num=conf_num))
+                    return render_template('create-activity.html', attr_id=attr_id, conf_num=conf_num)
                 else:
                     sdt = start_datetime
                     newquantity = quantity - int(request.form['num'])
-        db.execute('update time_slot set quantity=\'%s\' where start_datetime=\'%s\'' % (newquantity, sdt))
-        db.commit()
-    cur = db.execute('select cost from attraction where attr_id=\'%s\'' % attr_id)
-    cost = cur.fetchall()[0][0]
-    test = [request.form['start'], request.form['end'], conf_num, cost, attr_id, request.form['num']]
-    db.execute('insert into activity (start_datetime, end_datetime, conf_num, cost, attr_id, num_in_party) values (?, ?, ?, ?, ?, ?)',
+                    cur.execute('update time_slot set quantity=\'%s\' where start_datetime=\'%s\'' % (newquantity, sdt))
+                    db.commit()
+    if noslotfound and reserve_compulsory:
+        return render_template('create-activity.html', attr_id=attr_id, conf_num=conf_num)
+    cur.execute('select start_date, end_date from trip where conf_num=\'%s\'' % conf_num)
+    start_date, end_date = cur.fetchall()[0]
+    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d') + datetime.timedelta(days = 1)
+    if stime < start_date or etime > end_date:
+        return render_template('create-activity.html', attr_id=attr_id, conf_num=conf_num)
+    cur.execute('select start_datetime, end_datetime from activity')
+    times = cur.fetchall()
+    if times != ():
+        for start_datetime, end_datetime in times:
+            try:
+                if (datetime.datetime.strptime(start_datetime, '%Y-%m-%dT%H:%M:%S') <= stime <= datetime.datetime.strptime(end_datetime, '%Y-%m-%dT%H:%M:%S') or datetime.datetime.strptime(start_datetime, '%Y-%m-%dT%H:%M:%S') <= etime <= datetime.datetime.strptime(end_datetime, '%Y-%m-%dT%H:%M:%S')):
+                    return render_template('create-activity.html', attr_id=attr_id, conf_num=conf_num)
+            except:
+                if (datetime.datetime.strptime(start_datetime, '%Y-%m-%dT%H:%M') <= stime <= datetime.datetime.strptime(end_datetime, '%Y-%m-%dT%H:%M') or datetime.datetime.strptime(start_datetime, '%Y-%m-%dT%H:%M') <= etime <= datetime.datetime.strptime(end_datetime, '%Y-%m-%dT%H:%M')):
+                    return render_template('create-activity.html', attr_id=attr_id, conf_num=conf_num)
+    cost = cost * int(request.form['num'])
+    test = (request.form['start'], request.form['end'], conf_num, cost, attr_id, request.form['num'])
+    cur.execute('insert into activity (start_datetime, end_datetime, conf_num, cost, attr_id, num_in_party) values (%s, %s, %s, %s, %s, %s)',
                  test)
     db.commit()
-    cur = db.execute('select total_cost from trip where conf_num=\'%s\'' % conf_num)
+    cur.execute('select total_cost from trip where conf_num=\'%s\'' % conf_num)
     total_cost = cur.fetchall()[0][0]
     total_cost += cost
-    db.execute('update trip set total_cost=%s where conf_num=\'%s\'' % (total_cost, conf_num))
+    cur.execute('update trip set total_cost=%s where conf_num=\'%s\'' % (total_cost, conf_num))
     db.commit()
     return redirect(url_for('view_trip', conf_num=conf_num))
 
@@ -363,8 +443,9 @@ def add_review(attr_id=None):
     if not session['logged_in']:
         abort(401)
     db = get_db()
-    test = [strftime("%Y-%m-%dT%H:%M:%S"), request.form['title'], request.form['body'], session['username'], attr_id]
-    db.execute('insert into review (date_time, title, body, username, attr_id) values (?, ?, ?, ?, ?)',
+    cur = db.cursor()
+    test = (strftime("%Y-%m-%dT%H:%M:%S"), request.form['title'], request.form['body'], session['username'], attr_id)
+    cur.execute('insert into review (date_time, title, body, username, attr_id) values (%s, %s, %s, %s, %s)',
                  test)
     db.commit()
     return redirect(url_for('view_attraction', attr_id=attr_id))
@@ -374,13 +455,14 @@ def remove_review(date_time=None, attr_id=None):
     if not session['logged_in']:
         abort(401)
     db = get_db()
+    cur = db.cursor()
     db.execute('delete from review where date_time=\'%s\'' % date_time)
     db.commit()
     return redirect(url_for('view_attraction', attr_id=attr_id))
 
 def get_db():
     if not hasattr(g, 'db'):
-        g.db = sqlite3.connect(app.config['DATABASE'])
+        g.db = pymysql.connect(host='localhost', port=3306, user='root', passwd='smoothie42', db=app.config['DATABASE'])
     return g.db
 
 if __name__ == '__main__':

@@ -5,15 +5,15 @@
     <form action="/review-attraction/{{ attr_id }}" method="get"><input type="submit" value="Create Another Review"></form>
   {% endif %}
   <table style="width:80%; " class="pure-table pure-table-bordered">
-    <thead><tr><th/><th>Date</th><th>Title</th><th>Body</th><th>Username</th></tr></thead>
+    <thead><tr>{% if session.is_admin %}<th/>{% endif %}<th>Date</th><th>Title</th><th>Body</th><th>Username</th></tr></thead>
     <tbody>
   {% for entry in entries %}
     <tr>
-      <td style="width:80px"><form action="/remove-review/{{ entry[0] }}/{{ attr_id }}" method="post"><input type="submit" value="Remove"></form></td>
+      {% if session.is_admin %}<td style="width:80px"><form action="/remove-review/{{ entry[0] }}/{{ attr_id }}" method="post"><input type="submit" value="Remove"></form></td>{% endif %}
       <td>{{ entry[0] }}</td><td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td>
     </tr>
   {% else %}
-    <tr><em>No trips found</em></tr>
+    <tr><em>No reviews found</em></tr>
   {% endfor %}
     </tbody>
   </table>

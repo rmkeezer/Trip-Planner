@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
   <h1>Attractions</h1>
-  {% if session.logged_in %}
+  {% if session.logged_in and session.is_admin %}
     <h2>Add a new attraction</h2>
     <form action="{{ url_for('add_attraction') }}" method=post class="pure-form pure-form-aligned">
       <fieldset>
@@ -82,11 +82,11 @@
     <br/>
   {% endif %}
   <table style="width:80%; " class="pure-table pure-table-bordered">
-    <thead><tr><th/><th/><th/><th>Name</th><th>Description</th><th>Opening Time</th><th>Closing Time</th><th>Cost</th><th>Reseravtion Compuslory</th><th>Transport Name</th><th>Address</th></tr></thead>
+    <thead><tr>{% if session.is_admin %}<th/>{% endif %}<th/><th/><th>Name</th><th>Description</th><th>Opening Time</th><th>Closing Time</th><th>Cost</th><th>Reseravtion Compuslory</th><th>Transport Name</th><th>Address</th></tr></thead>
     <tbody>
   {% for entry in entries %}
     <tr>
-      <td style="width:80px"><form action="/remove-attraction/{{ entry[0] }}" method="post"><input type="submit" value="Remove"></form></td>
+      {% if session.is_admin %}<td style="width:80px"><form action="/remove-attraction/{{ entry[0] }}" method="post"><input type="submit" value="Remove"></form></td>{% endif %}
       <td style="width:100px"><form action="/create-activity/{{ entry[0] }}/{{ conf_num }}" method="get"><input type="submit" value="Create as Activity"></form></td>
       <td style="width:100px"><form action="/view-attraction/{{ entry[0] }}" method="get"><input type="submit" value="View"></form></td>
       <td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td><td>{{ entry[4] }}</td><td>{{ entry[5] }}</td><td>{{ entry[6] }}</td><td>{{ entry[7] }}</td><td>{{ entry[9] }}</td>

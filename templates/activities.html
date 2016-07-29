@@ -9,13 +9,13 @@
     <br/>
   {% endif %}
   <table style="width:80%; " class="pure-table pure-table-bordered">
-    <thead><tr><th/><th/><th>Attraction</th><th>Start Time</th><th>End Time</th><th>Cost</th></tr></thead>
+    <thead><tr><th/><th/><th>Attraction</th><th>Start Time</th><th>End Time</th><th>Cost</th><th>Number in Party</th></tr></thead>
     <tbody>
   {% for entry in entries %}
     <tr>
       <td style="width:80px"><form action="/remove-activity/{{ conf_num }}/{{ entry[0] }}" method="post"><input type="submit" value="Remove"></form></td>
       <td style="width:50px"><form action="/attractions/{{ conf_num }}" method="get"><input type="submit" value="View"></form></td>
-      <td>{{ entry[5] }}</td><td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td>
+      <td>{{ entry[6] }}</td><td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td><td>{{ entry[5] }}</td>
     </tr>
   {% else %}
     <tr><em>No activities found</em></tr>
